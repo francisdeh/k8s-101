@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: empty-dir-app
+spec:
+  selector:
+    matchLabels:
+      app: empty-dir-app
+  template:
+    metadata:
+      labels:
+        app: empty-dir-app
+    spec:
+      volumes: # define volume here
+        - name: cache
+          emptyDir: {}
+      containers:
+      - name: one
+        image: busybox
+        command:
+          - "/bin/sh"
+        args:
+          - "-c"
+          - "touch /foo/bar.txt && sleep 3600"
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        volumeMounts: # mount the volume here
+          - name: cache
+            mountPath: /foo
+      - name: two
+        image: busybox
+        command:
+          - "sleep"
+          - "3600"
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        volumeMounts: # mount the volume here
+          - name: cache
+            mountPath: /foo
