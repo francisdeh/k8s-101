@@ -584,3 +584,166 @@ APP_VERSION=1.0.0
 You can use config maps as volumes.
 
 ![Screenshot 2023-08-15 at 2.52.53 PM.png](data/Screenshot_2023-08-15_at_2.52.53_PM.png)
+
+### Secrets
+
+```bash
+kubectl create secret generic mysecret --from-literal=db-password=1234
+kubectl get secrets
+kubectl get secrets mysecret -o yaml
+
+kubectl create secret generic mysecret-from-file --from-file=secret
+kubectl describe mysecret -o yaml
+
+```
+
+### Namespaces
+
+![Screenshot 2023-08-18 at 3.29.18 PM.png](data/Screenshot_2023-08-18_at_3.29.18_PM.png)
+
+```bash
+kubectl get ns
+
+# create namespaces using imperative approach
+kubectl create ns engineering
+kubectl create ns tooling
+kubectl create ns ml
+kubectl create ns logging
+
+kubectl get ns
+kubectl delete ns logging
+```
+
+The declarative approach
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: engineering
+```
+
+```bash
+kubectl apply -f yamls/namespaces.yaml
+kubectl get ns
+
+NAME              STATUS   AGE
+default           Active   14d
+engineering       Active   7s
+kube-node-lease   Active   14d
+kube-public       Active   14d
+kube-system       Active   14d
+ml                Active   7s
+
+# when services/pods/deployments are been defined declaritively, namespace
+# can be added to the metadata, right immediately after the kind definition
+
+# get pods for a particular namespace
+kubectl get po # default namespace
+kubectl get po -n engineering # or --namespace
+kubectl get all -n engineering
+```
+
+### Kubectx and kubens
+
+Switching between clusters (contexts) and namespaces respectively.
+
+```bash
+brew install kubectx
+
+# type kubens to see the current namespace
+Ξ Projects/k8s git:(main) ▶ kubens
+default
+engineering
+kube-node-lease
+kube-public
+kube-system
+ml
+
+# to set a default namespace, type
+kubens engineering
+Ξ Projects/k8s git:(main) ▶ kubens engineering
+Context "minikube" modified.
+Active namespace is "engineering".
+
+# switch back to previous namespace
+Ξ Projects/k8s git:(main) ▶ kubens -
+Context "minikube" modified.
+Active namespace is "default".
+```
+
+### Liveness Probe - health check - Readiness Probe
+
+```yaml
+# under container
+livenessProbe:
+	httpGet:
+		path: /health
+		port: 8080
+	initialDelaySeconds: 5
+	timeoutSeconds: 1
+	failureThreshold: 3
+	periodSeconds: 5
+```
+
+### K8 Jobs
+
+```yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-backup
+spec:
+  ttlSecondsAfterFinished: 10
+  template:
+    spec:
+      containers:
+      - name: db-backup
+        image: busybox
+        command: ["/bin/sh",  "-c"]
+        args:
+          - "echo 'performing db backup....' && sleep 20"
+      restartPolicy: Never
+```
+
+```bash
+Ξ Projects/k8s git:(main) ▶ kubectl apply -f yamls/job.yaml 
+job.batch/db-backup created
+
+↑1 Projects/k8s git:(main) ▶ kubectl get pods
+NAME                             READY   STATUS    RESTARTS        AGE
+config-app-6d8946cd87-hj5lk      1/1     Running   42 (31m ago)    5d22h
+db-backup-cll2h                  1/1     Running   0               14s
+empty-dir-app-7d9f8885d5-rxkkz   2/2     Running   104 (18m ago)   6d22h
+
+Ξ Projects/k8s git:(main) ▶ kubectl logs db-backup-cll2h
+performing db backup....
+
+kubectl get job
+```
+
+### Cron Job
+
+```yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: db-backup-cron-job
+spec:
+  schedule: "*/1 * * * *" # every minute
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: hello
+            image: busybox:1.28
+            imagePullPolicy: IfNotPresent
+            command:
+            - /bin/sh
+            - -c
+            - date; echo Hello from the Kubernetes cluster performing db backup
+          restartPolicy: OnFailure
+```
+
+Completed - 👊🏾

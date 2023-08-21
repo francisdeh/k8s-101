@@ -1,0 +1,15 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-backup
+spec:
+  ttlSecondsAfterFinished: 10
+  template:
+    spec:
+      containers:
+      - name: db-backup
+        image: busybox
+        command: ["/bin/sh",  "-c"]
+        args:
+          - "echo 'performing db backup....' && sleep 20"
+      restartPolicy: Never
