@@ -746,4 +746,7 @@ spec:
           restartPolicy: OnFailure
 ```
 
+### K9s CLI
+![k9.png](data/k9.png)
+
 Completed - 👊🏾
